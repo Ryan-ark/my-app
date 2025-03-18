@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppSidebar } from "@/components/app-sidebar"
@@ -67,7 +68,7 @@ interface Comment {
   date: string;
 }
 
-export default function Dashboard() {
+export default function Dashboard(): ReactElement {
   const [users, setUsers] = useState<User[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [theaters, setTheaters] = useState<Theater[]>([]);
