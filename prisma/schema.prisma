@@ -185,3 +185,12 @@ model users {
   /// Nested objects had no data in the sample dataset to introspect a nested type.
   preferences Json?
 }
+
+model SensorReading {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  ec          Float?
+  temperature Float?
+  ph          Float?
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+}

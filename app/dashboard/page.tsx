@@ -1,10 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { ReactElement } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AppSidebar } from "@/components/app-sidebar"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import { AppSidebar } from "@/components/app-sidebar";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,257 +23,254 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { SensorData, getSensorData, subscribeToSensorData } from '@/app/lib/sensorService';
+import { saveSensorReading, getLatestReadings, SensorReadingData } from '@/app/lib/sensorDbService';
 
-interface UserPreferences {
-  favorite_genres?: string[];
-  notification_settings?: {
-    email?: boolean;
-    push?: boolean;
-  };
-}
+export default function Dashboard() {
+  const [sensorData, setSensorData] = useState<SensorData>({});
+  const [historicalData, setHistoricalData] = useState<SensorReadingData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  preferences?: UserPreferences;
-}
+  // Fetch historical data
+  const fetchHistoricalData = useCallback(async () => {
+    try {
+      const readings = await getLatestReadings();
+      setHistoricalData(readings);
+    } catch (err) {
+      console.error('Error fetching historical data:', err);
+      setError('Failed to fetch historical data');
+    }
+  }, []);
 
-interface Movie {
-  id: string;
-  title: string;
-  plot: string | null;
-  genres: string[];
-  year: number | string;
-  rated: string | null;
-  runtime: number | null;
-  num_mflix_comments: number;
-}
-
-interface Theater {
-  id: string;
-  theaterId: number;
-  location: {
-    address: {
-      city: string;
-      state: string;
-      street1: string;
-      zipcode: string;
-    };
-  };
-}
-
-interface Comment {
-  id: string;
-  name: string;
-  email: string;
-  movie_id: string;
-  text: string;
-  date: string;
-}
-
-export default function Dashboard(): ReactElement {
-  const [users, setUsers] = useState<User[]>([]);
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [theaters, setTheaters] = useState<Theater[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
+  // Save current reading to database
+  const saveCurrentReading = useCallback(async (data: SensorData) => {
+    try {
+      await saveSensorReading({
+        ...data,
+        timestamp: new Date(),
+      });
+      await fetchHistoricalData();
+    } catch (err) {
+      console.error('Error saving reading:', err);
+    }
+  }, [fetchHistoricalData]);
 
   useEffect(() => {
+    let isSubscribed = true;
+
     const fetchData = async () => {
       try {
-        const [usersResponse, moviesResponse, theatersResponse, commentsResponse] = await Promise.all([
-          fetch('/api/users'),
-          fetch('/api/movies'),
-          fetch('/api/theaters'),
-          fetch('/api/comments')
-        ]);
-        
-        const usersData = await usersResponse.json();
-        const moviesData = await moviesResponse.json();
-        const theatersData = await theatersResponse.json();
-        const commentsData = await commentsResponse.json();
-        
-        setUsers(usersData);
-        setMovies(moviesData);
-        setTheaters(theatersData);
-        setComments(commentsData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+        const data = await getSensorData();
+        if (isSubscribed) {
+          setSensorData(data);
+          setLastUpdated(new Date());
+          await saveCurrentReading(data);
+        }
+      } catch (err) {
+        if (isSubscribed) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch data');
+        }
       }
     };
 
     fetchData();
-  }, []);
+    fetchHistoricalData();
+
+    const unsubscribe = subscribeToSensorData((data) => {
+      if (isSubscribed) {
+        setSensorData(data);
+        setLastUpdated(new Date());
+        saveCurrentReading(data);
+      }
+    });
+
+    const saveInterval = setInterval(() => {
+      setSensorData(currentData => {
+        saveCurrentReading(currentData);
+        return currentData;
+      });
+    }, 120000);
+
+    return () => {
+      isSubscribed = false;
+      unsubscribe();
+      clearInterval(saveInterval);
+    };
+  }, [fetchHistoricalData, saveCurrentReading]);
+
+  const formatChartData = (data: SensorReadingData[]) => {
+    return data.map(reading => ({
+      ...reading,
+      timestamp: new Date(reading.timestamp!).toLocaleTimeString(),
+    })).reverse();
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await getSensorData();
+      setSensorData(data);
+      setLastUpdated(new Date());
+      await saveCurrentReading(data);
+      await fetchHistoricalData();
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
+            <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Overview</BreadcrumbPage>
+                  <BreadcrumbLink href="#">Sensor Monitoring</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+          <div className="ml-auto pr-4 flex items-center gap-4">
+            {lastUpdated && (
+              <span className="text-sm text-gray-500">
+                Last updated: {lastUpdated.toLocaleString()}
+              </span>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className={`flex items-center gap-2 ${isRefreshing ? 'opacity-50' : ''}`}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid gap-4 md:grid-cols-4">
+
+        <div className="flex-1 space-y-4 p-4 pt-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded" role="alert">
+              {error}
+            </div>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <CardTitle className="text-sm font-medium">EC Level</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.length}</div>
+                <div className="text-2xl font-bold">{sensorData.ec?.toFixed(2) || 'N/A'} mS/cm</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Movies</CardTitle>
+                <CardTitle className="text-sm font-medium">Temperature</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{movies.length}</div>
+                <div className="text-2xl font-bold">{sensorData.temperature?.toFixed(1) || 'N/A'} °C</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Theaters</CardTitle>
+                <CardTitle className="text-sm font-medium">pH Level</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{theaters.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Comments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{comments.length}</div>
+                <div className="text-2xl font-bold">{sensorData.ph?.toFixed(2) || 'N/A'}</div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Movies</CardTitle>
+                <CardTitle>EC Level Trend</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Year</TableHead>
-                      <TableHead>Genre</TableHead>
-                      <TableHead>Comments</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {movies.slice(0, 5).map((movie) => (
-                      <TableRow key={movie.id}>
-                        <TableCell className="font-medium">{movie.title}</TableCell>
-                        <TableCell>{movie.year}</TableCell>
-                        <TableCell>{movie.genres.slice(0, 2).join(', ')}</TableCell>
-                        <TableCell>{movie.num_mflix_comments}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={formatChartData(historicalData)}>
+                    <defs>
+                      <linearGradient id="ecGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="ec" stroke="#0ea5e9" fillOpacity={1} fill="url(#ecGradient)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Recent Comments</CardTitle>
+                <CardTitle>Temperature Trend</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Comment</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {comments.slice(0, 5).map((comment) => (
-                      <TableRow key={comment.id}>
-                        <TableCell>{comment.name}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{comment.text}</TableCell>
-                        <TableCell>{new Date(comment.date).toLocaleDateString()}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={formatChartData(historicalData)}>
+                    <defs>
+                      <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="temperature" stroke="#f97316" fillOpacity={1} fill="url(#tempGradient)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>Theaters</CardTitle>
+                <CardTitle>pH Level Trend</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Theater ID</TableHead>
-                      <TableHead>City</TableHead>
-                      <TableHead>State</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {theaters.slice(0, 5).map((theater) => (
-                      <TableRow key={theater.id}>
-                        <TableCell>{theater.theaterId}</TableCell>
-                        <TableCell>{theater.location.address.city}</TableCell>
-                        <TableCell>{theater.location.address.state}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.slice(0, 5).map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={formatChartData(historicalData)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="timestamp" />
+                    <YAxis domain={[6, 8]} />
+                    <Tooltip />
+                    <Line 
+                      type="monotone" 
+                      dataKey="ph" 
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
