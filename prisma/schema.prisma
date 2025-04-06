@@ -190,7 +190,9 @@ model SensorReading {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   ec          Float?
   temperature Float?
-  ph          Float?
+  ph          String?
+  do_level    Float?   @map("do")
+  weight      Float?
   timestamp   DateTime @default(now())
   createdAt   DateTime @default(now())
 }

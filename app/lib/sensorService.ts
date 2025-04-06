@@ -1,11 +1,17 @@
 import { ref, onValue, get } from 'firebase/database';
 import { database } from './firebase';
 
+interface SensorReading {
+  "\"DO\"": string;
+  "\"EC\"": string;
+  "\"Temperature\"": string;
+  "\"Weight\"": string;
+  "{\"pH\"": string;
+  timestamp: string;
+}
+
 export interface SensorData {
-  ec?: number;
-  temperature?: number;
-  ph?: number;
-  timestamp?: string;
+  [key: string]: SensorReading;
 }
 
 export const getSensorData = async (): Promise<SensorData> => {

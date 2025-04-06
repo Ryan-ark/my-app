@@ -1,39 +1,24 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { SensorData, getSensorData, subscribeToSensorData } from '@/app/lib/sensorService';
-import { saveSensorReading, getLatestReadings, SensorReadingData } from '@/app/lib/sensorDbService';
+import { useEffect, useState } from 'react';
+import { getSensorData, subscribeToSensorData, SensorData } from '@/app/lib/sensorService';
 
 export default function FirebaseTest() {
   const [sensorData, setSensorData] = useState<SensorData>({});
-  const [historicalData, setHistoricalData] = useState<SensorReadingData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Fetch historical data
-  const fetchHistoricalData = useCallback(async () => {
-    try {
-      const readings = await getLatestReadings();
-      setHistoricalData(readings);
-    } catch (err) {
-      console.error('Error fetching historical data:', err);
-    }
-  }, []);
-
-  // Save current reading to database
-  const saveCurrentReading = useCallback(async (data: SensorData) => {
-    try {
-      await saveSensorReading({
-        ...data,
-        timestamp: new Date(),
-      });
-      setLastSaved(new Date());
-      await fetchHistoricalData(); // Refresh historical data
-    } catch (err) {
-      console.error('Error saving reading:', err);
-    }
-  }, [fetchHistoricalData]);
+  // Helper function to get the latest reading
+  const getLatestReading = (data: SensorData) => {
+    const keys = Object.keys(data);
+    if (keys.length === 0) return null;
+    
+    // Get the latest key (Firebase keys are timestamps, so the last one is the most recent)
+    const latestKey = keys[keys.length - 1];
+    console.log('Latest key:', latestKey);
+    console.log('Latest reading:', data[latestKey]);
+    return data[latestKey];
+  };
 
   useEffect(() => {
     let isSubscribed = true;
@@ -42,10 +27,10 @@ export default function FirebaseTest() {
     const fetchData = async () => {
       try {
         const data = await getSensorData();
+        console.log('Fetched data:', data);
         if (isSubscribed) {
           setSensorData(data);
           setLastUpdated(new Date());
-          await saveCurrentReading(data); // Save initial reading
         }
       } catch (err) {
         if (isSubscribed) {
@@ -55,31 +40,23 @@ export default function FirebaseTest() {
     };
 
     fetchData();
-    fetchHistoricalData();
 
     // Subscribe to real-time updates
     const unsubscribe = subscribeToSensorData((data) => {
+      console.log('Real-time update:', data);
       if (isSubscribed) {
         setSensorData(data);
         setLastUpdated(new Date());
       }
     });
 
-    // Set up periodic saving (every 2 minutes)
-    const saveInterval = setInterval(() => {
-      // Use a callback to get the latest state
-      setSensorData(currentData => {
-        saveCurrentReading(currentData);
-        return currentData;
-      });
-    }, 120000); // 2 minutes in milliseconds
-
     return () => {
       isSubscribed = false;
       unsubscribe();
-      clearInterval(saveInterval);
     };
-  }, [fetchHistoricalData, saveCurrentReading]); // Remove sensorData from dependencies
+  }, []);
+
+  const latestReading = getLatestReading(sensorData);
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -89,9 +66,6 @@ export default function FirebaseTest() {
         <div className="flex gap-4 text-sm text-gray-600 mb-4">
           {lastUpdated && (
             <p>Last updated: {lastUpdated.toLocaleString()}</p>
-          )}
-          {lastSaved && (
-            <p>Last saved to database: {lastSaved.toLocaleString()}</p>
           )}
         </div>
 
@@ -115,67 +89,43 @@ export default function FirebaseTest() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Timestamp</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {latestReading?.timestamp ? new Date(latestReading.timestamp).toLocaleString() : 'N/A'}
+                </td>
+              </tr>
+              <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">EC</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {sensorData.ec ? `${sensorData.ec} mS/cm` : 'N/A'}
+                  {latestReading && latestReading['\"EC\"'] ? `${latestReading['\"EC\"']} mS/cm` : 'N/A'}
                 </td>
               </tr>
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Temperature</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {sensorData.temperature ? `${sensorData.temperature} °C` : 'N/A'}
+                  {latestReading && latestReading['\"Temperature\"'] ? `${latestReading['\"Temperature\"']} °C` : 'N/A'}
                 </td>
               </tr>
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">pH</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {sensorData.ph ? sensorData.ph : 'N/A'}
+                  {latestReading && latestReading['{\"pH\"'] ? latestReading['{\"pH\"'] : 'N/A'}
+                </td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">DO</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {latestReading && latestReading['\"DO\"'] ? `${latestReading['\"DO\"']} mg/L` : 'N/A'}
+                </td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Weight</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {latestReading && latestReading['\"Weight\"'] ? `${latestReading['\"Weight\"'].replace('}', '')} g` : 'N/A'}
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Historical Data</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Timestamp
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    EC (mS/cm)
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Temperature (°C)
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    pH
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {historicalData.map((reading) => (
-                  <tr key={reading.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {reading.timestamp ? new Date(reading.timestamp).toLocaleString() : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {reading.ec ?? 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {reading.temperature ?? 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {reading.ph ?? 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
 
         <div className="mt-8">
