@@ -9,6 +9,17 @@ export interface SensorReadingData {
   createdAt?: Date;
 }
 
+interface SensorReadingResponse {
+  id: string;
+  EC: number | null;
+  Temp: number | null;
+  pH: string | null;
+  DO: number | null;
+  Weight: number | null;
+  timestamp: string;
+  createdAt: string;
+}
+
 export const saveSensorReading = async (data: SensorReadingData) => {
   try {
     // Transform the data to match the database schema
@@ -65,7 +76,7 @@ export const getLatestReadings = async () => {
     const data = await response.json();
     
     // Transform the data to match our application's structure
-    return data.map((reading: any) => ({
+    return data.map((reading: SensorReadingResponse) => ({
       id: reading.id,
       EC: reading.EC,
       Temp: reading.Temp,

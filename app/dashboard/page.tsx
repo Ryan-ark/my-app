@@ -54,9 +54,9 @@ export default function Dashboard() {
 
   // Helper function to get the latest reading
   const getLatestReading = (data: SensorData) => {
-    const keys = Object.keys(data);
-    if (keys.length === 0) return null;
-    return data[keys[keys.length - 1]];
+    const entries = Object.entries(data);
+    if (entries.length === 0) return null;
+    return entries[entries.length - 1][1];
   };
 
   // Helper function to parse sensor values
@@ -75,13 +75,13 @@ export default function Dashboard() {
   // Format data for charts
   const formatChartData = (data: SensorData): FormattedSensorData[] => {
     try {
-      return Object.entries(data).map(([key, reading]) => ({
-        timestamp: new Date(reading.timestamp || '').toLocaleTimeString(),
-        ec: parseSensorValue(reading['\"EC\"']),
-        temperature: parseSensorValue(reading['\"Temperature\"']),
-        ph: parseSensorValue(reading['{\"pH\"']),
-        do: parseSensorValue(reading['\"DO\"']),
-        weight: parseSensorValue(reading['\"Weight\"'])
+      return Object.entries(data).map(entry => ({
+        timestamp: new Date(entry[1].timestamp || '').toLocaleTimeString(),
+        ec: parseSensorValue(entry[1]['\"EC\"']),
+        temperature: parseSensorValue(entry[1]['\"Temperature\"']),
+        ph: parseSensorValue(entry[1]['{\"pH\"']),
+        do: parseSensorValue(entry[1]['\"DO\"']),
+        weight: parseSensorValue(entry[1]['\"Weight\"'])
       })).slice(-10); // Get last 10 readings
     } catch (err) {
       console.error('Error formatting chart data:', err);
