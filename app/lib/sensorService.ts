@@ -1,4 +1,4 @@
-import { ref, onValue, get } from 'firebase/database';
+import { ref, onValue, get, set, push } from 'firebase/database';
 import { database } from './firebase';
 
 interface SensorReading {
@@ -37,4 +37,36 @@ export const subscribeToSensorData = (callback: (data: SensorData) => void) => {
       callback(snapshot.val());
     }
   });
+};
+
+export const updateWeightData = async (newWeight: number): Promise<string> => {
+  try {
+    // First get the latest sensor data
+    const currentData = await getSensorData();
+    const entries = Object.entries(currentData);
+    
+    if (entries.length === 0) {
+      throw new Error('No sensor data available');
+    }
+    
+    // Get the latest entry
+    const latestEntry = entries[entries.length - 1][1];
+    
+    // Create a new entry with updated weight
+    const newEntry: SensorReading = {
+      ...latestEntry,
+      "\"Weight\"": JSON.stringify(newWeight),
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add the new entry to Firebase
+    const sensorRef = ref(database, 'sensor_data');
+    const newEntryRef = push(sensorRef);
+    await set(newEntryRef, newEntry);
+    
+    return newEntryRef.key || '';
+  } catch (error) {
+    console.error('Error updating weight data:', error);
+    throw error;
+  }
 }; 
