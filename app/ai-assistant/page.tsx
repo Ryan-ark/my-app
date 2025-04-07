@@ -59,6 +59,66 @@ interface FeedingTip {
   impact: string;
 }
 
+// Function to format message content with HTML
+const formatMessageContent = (content: string) => {
+  // First, handle specific patterns before the general formatting
+  
+  // Save decimal numbers like "6.8-8.0" or "3.94 mg/L" from being interpreted as list items
+  content = content.replace(/(\d+\.\d+)(-\d+\.\d+)?/g, '<span class="decimal-number">$&</span>');
+  
+  // Replace bold text (**text**)
+  content = content.replace(/\*\*([^*]+?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+  
+  // Replace headers (###)
+  content = content.replace(/### (.+?):/g, '<h3 class="font-semibold text-base mt-2 mb-1">$1:</h3>');
+  content = content.replace(/## (.+?):/g, '<h3 class="font-semibold text-base mt-2 mb-1">$1:</h3>');
+  
+  // Handle numbered lists with proper detection of actual list items
+  // Match patterns like "1. Something:" at the start of a line
+  content = content.replace(/^(\d+)\.\s+([^:0-9][^:]*?)(?:\s*:|$)/gm, 
+    (match: string, number: string, text: string) => {
+      return `<div class="flex gap-2 mt-2 items-start numbered-item">
+        <span class="font-semibold min-w-[1.5rem] text-right">${number}.</span>
+        <div class="flex-1"><span class="font-semibold">${text.trim()}</span></div>
+      </div>`;
+    }
+  );
+  
+  // Handle the content following the numbered list items
+  content = content.replace(/<\/div>\s*([^<]+)/g, 
+    (match: string, text: string) => {
+      return `</div><div class="ml-8 mt-1">${text.trim()}</div>`;
+    }
+  );
+  
+  // Restore decimal numbers
+  content = content.replace(/<span class="decimal-number">(.+?)<\/span>/g, '$1');
+  
+  // Handle bullet points
+  content = content.replace(/(?<![a-z0-9])-\s+(.+?)(?=\n|$)/g, 
+    '<li class="ml-6 mt-1 list-disc">$1</li>'
+  );
+  
+  // Convert line breaks to paragraph tags, but preserve existing HTML
+  const paragraphs = content.split('\n\n');
+  content = paragraphs.map((para: string) => {
+    // Skip paragraphing if the text is already in HTML
+    if (para.trim() && 
+        !para.includes('<div') && 
+        !para.includes('<h3') && 
+        !para.includes('<li') && 
+        !para.includes('<span')) {
+      return `<p class="my-1">${para}</p>`;
+    }
+    return para;
+  }).join('');
+  
+  // Replace remaining single line breaks with <br/>, but not inside HTML tags
+  content = content.replace(/(?<!>)\n(?!<)/g, '<br/>');
+  
+  return content;
+};
+
 export default function AiAssistant() {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -350,7 +410,11 @@ export default function AiAssistant() {
                                     : 'bg-primary text-primary-foreground'
                                 }`}
                               >
-                                {message.content}
+                                {message.role === 'assistant' ? (
+                                  <div dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }} />
+                                ) : (
+                                  message.content
+                                )}
                               </div>
                             </div>
                           </div>
