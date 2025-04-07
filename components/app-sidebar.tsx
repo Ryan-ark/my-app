@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   GalleryVerticalEnd,
   LayoutDashboard,
+  Sparkles
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -42,6 +43,18 @@ const data = {
         {
           title: "Sensor Overview",
           url: "/dashboard",
+        }
+      ],
+    },
+    {
+      title: "AI Assistant",
+      url: "/ai-assistant",
+      icon: Sparkles,
+      isActive: false,
+      items: [
+        {
+          title: "Aqua Intelligence",
+          url: "/ai-assistant",
         }
       ],
     }
