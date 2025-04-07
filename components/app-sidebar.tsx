@@ -16,6 +16,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { useEffect, useState } from "react"
 
 // This is sample data.
 const data = {
@@ -48,8 +49,32 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    // Check if window is defined (for SSR)
+    if (typeof window !== "undefined") {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 1024)
+      }
+      
+      // Initial check
+      checkIsMobile()
+      
+      // Add event listener
+      window.addEventListener("resize", checkIsMobile)
+      
+      // Clean up
+      return () => window.removeEventListener("resize", checkIsMobile)
+    }
+  }, [])
+  
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar 
+      collapsible={isMobile ? "offcanvas" : "icon"}
+      className="shadow-sm"
+      {...props}
+    >
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
