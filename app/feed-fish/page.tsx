@@ -425,7 +425,7 @@ export default function FeedFish() {
                                         {format(schedule.scheduledAt, 'h:mm a')}
                                       </div>
                                       <Badge variant="outline" className={getFeedTypeColor(schedule.feedType)}>
-                                        {schedule.feedAmount}g
+                                        {(schedule.feedAmount / 1000).toFixed(3)}kg
                                       </Badge>
                                     </div>
                                   </div>
@@ -514,7 +514,7 @@ export default function FeedFish() {
                                         <Badge className={getFeedTypeColor(schedule.feedType)}>
                                           {getFeedTypeLabel(schedule.feedType)}
                                         </Badge>
-                                        <span className="ml-2 font-semibold">{schedule.feedAmount}g</span>
+                                        <span className="ml-2 font-semibold">{(schedule.feedAmount / 1000).toFixed(3)}kg</span>
                                       </span>
                                     </div>
                                     {schedule.description && (
@@ -629,16 +629,20 @@ export default function FeedFish() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="feedAmount">Feed Amount (grams)</Label>
+                  <Label htmlFor="feedAmount">Feed Amount (kilograms)</Label>
                   <Input
                     id="feedAmount"
                     name="feedAmount"
                     type="number"
                     min="0"
-                    step="0.1"
-                    placeholder="50"
-                    value={currentSchedule.feedAmount || ''}
-                    onChange={handleInputChange}
+                    step="0.001"
+                    placeholder="0.05"
+                    value={currentSchedule.feedAmount ? (currentSchedule.feedAmount / 1000).toFixed(3) : ''}
+                    onChange={(e) => {
+                      const kgValue = parseFloat(e.target.value) || 0;
+                      const gramValue = kgValue * 1000;
+                      setCurrentSchedule(prev => ({ ...prev, feedAmount: gramValue }));
+                    }}
                     required
                   />
                 </div>

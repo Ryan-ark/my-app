@@ -257,7 +257,7 @@ export default function Dashboard() {
       
       toast({
         title: "Feeding successful",
-        description: `Fed ${weight}g of fish food. Data has been updated.`,
+        description: `Fed ${(weight / 1000).toFixed(3)}kg of fish food. Data has been updated.`,
         variant: "default"
       });
       
@@ -335,24 +335,27 @@ export default function Dashboard() {
                     <DialogHeader>
                       <DialogTitle>Feed Fish</DialogTitle>
                       <DialogDescription>
-                        Enter the amount of feed (in grams) to dispense to the fish.
+                        Enter the amount of feed (in kilograms) to dispense to the fish.
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleFeedFish}>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="weight" className="text-right">
-                            Weight (g)
+                            Weight (kg)
                           </Label>
                           <Input
                             id="weight"
                             type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={feedWeight}
-                            onChange={(e) => setFeedWeight(e.target.value)}
+                            step="0.001"
+                            min="0.001"
+                            value={feedWeight ? (parseFloat(feedWeight) / 1000).toFixed(3) : ''}
+                            onChange={(e) => {
+                              const kgValue = parseFloat(e.target.value) || 0;
+                              setFeedWeight((kgValue * 1000).toString());
+                            }}
                             className="col-span-3"
-                            placeholder="Enter weight in grams"
+                            placeholder="Enter weight in kilograms"
                             required
                           />
                         </div>
@@ -477,9 +480,9 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center space-y-1 sm:space-y-2">
                       <div className="flex items-end justify-center gap-1 sm:gap-2">
                         <span className="text-xl sm:text-3xl font-bold">
-                          {parseSensorValue(latestReading['\"Weight\"']).toFixed(2)}
+                          {(parseSensorValue(latestReading['\"Weight\"']) / 1000).toFixed(3)}
                         </span>
-                        <span className="text-xs sm:text-sm mb-0.5 sm:mb-1">g</span>
+                        <span className="text-xs sm:text-sm mb-0.5 sm:mb-1">kg</span>
                       </div>
                       {weightTrend && (
                         <div className={`flex items-center gap-1 text-xs sm:text-sm ${
@@ -492,7 +495,7 @@ export default function Dashboard() {
                           ) : (
                             <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
                           )}
-                          <span>{weightTrend.difference}g</span>
+                          <span>{(parseFloat(weightTrend.difference) / 1000).toFixed(3)}kg</span>
                           <span className="text-muted-foreground text-[10px] sm:text-xs">
                             {weightTrend.direction === 'up' ? 'increase' : 'decrease'}
                           </span>
