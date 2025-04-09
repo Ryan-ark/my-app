@@ -104,7 +104,7 @@ export default function Dashboard() {
         temperature: parseSensorValue(entry[1]['\"Temperature\"']),
         ph: parseSensorValue(entry[1]['{\"pH\"']),
         do: parseSensorValue(entry[1]['\"DO\"']),
-        weight: parseSensorValue(entry[1]['\"Weight\"'])
+        weight: parseSensorValue(entry[1]['\"Weight\"']) / 1000 // Convert to kilograms
       })).slice(-10); // Get last 10 readings
     } catch (err) {
       console.error('Error formatting chart data:', err);
@@ -622,7 +622,7 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="timestamp" tick={{fontSize: isMobile ? 10 : 12}} />
                       <YAxis tick={{fontSize: isMobile ? 10 : 12}} />
-                      <RechartsTooltip />
+                      <RechartsTooltip formatter={(value: number) => [`${value.toFixed(3)} kg`, 'Weight']} />
                       <Area type="monotone" dataKey="weight" stroke="#a855f7" fillOpacity={1} fill="url(#weightGradient)" />
                     </AreaChart>
                   </ResponsiveContainer>

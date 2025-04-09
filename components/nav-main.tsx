@@ -34,7 +34,7 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Sensor Monitoring</SidebarGroupLabel>
+      <SidebarGroupLabel>AquaLink Monitoring</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
