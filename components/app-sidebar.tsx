@@ -24,12 +24,12 @@ import { useEffect, useState } from "react"
 const data = {
   user: {
     name: "Admin",
-    email: "admin@sensor-reading.com",
+    email: "admin@myaqualink.com",
     avatar: "/avatars/admin.jpg",
   },
   teams: [
     {
-      name: "Sensor Reading",
+      name: "AquaLink",
       logo: GalleryVerticalEnd,
       plan: "Monitoring",
     }
