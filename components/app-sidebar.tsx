@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import {
+  Fish,
   GalleryVerticalEnd,
   LayoutDashboard,
   Sparkles
@@ -55,6 +56,18 @@ const data = {
         {
           title: "Aqua Intelligence",
           url: "/ai-assistant",
+        }
+      ],
+    },
+    {
+      title: "Feed Fish",
+      url: "/feed-fish",
+      icon: Fish,
+      isActive: false,
+      items: [
+        {
+          title: "Feeding Schedule",
+          url: "/feed-fish",
         }
       ],
     }

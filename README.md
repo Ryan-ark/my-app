@@ -1,18 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aqua Intelligence
+
+An AI-powered system for managing aquaponic fish feeding and water quality monitoring.
+
+## Features
+
+### AI Assistant
+- Ask questions about fish feeding, water quality, or system maintenance
+- Get AI-generated responses based on real-time sensor data
+- View growth forecasting and water quality predictions
+
+### Feed Fish Scheduling
+- Create and manage feeding schedules
+- View schedules in calendar or list format
+- Set up recurring feeding schedules
+- Track completed feedings
+- Customize feed types and amounts
+
+## Database Schema
+
+The application uses MongoDB with Prisma ORM for data management.
+
+Key models include:
+- `SensorReading`: Stores fish tank sensor data (temperature, pH, DO, etc.)
+- `FeedingSchedule`: Stores feeding schedules with customizable options
+
+## API Routes
+
+### Sensor Data
+- `GET /api/sensor` - Get all sensor readings
+- `POST /api/sensor` - Add a new sensor reading
+
+### Feeding Schedules
+- `GET /api/feeding` - Get all feeding schedules
+- `POST /api/feeding` - Create a new feeding schedule
+- `GET /api/feeding/[id]` - Get a specific feeding schedule
+- `PATCH /api/feeding/[id]` - Update a feeding schedule
+- `DELETE /api/feeding/[id]` - Delete a feeding schedule
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables in `.env`
+4. Run the development server: `npm run dev`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Technologies Used
+
+- Next.js 14
+- React
+- Tailwind CSS
+- MongoDB with Prisma
+- Firebase Realtime Database for sensor data
+- Groq AI for AI assistant features
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
