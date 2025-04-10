@@ -10,9 +10,11 @@ export function middleware(request: NextRequest) {
                           request.cookies.has("__Host-next-auth.session-token");
   
   const pathname = request.nextUrl.pathname;
-  const isOnDashboard = pathname.startsWith('/dashboard');
+  const isProtectedRoute = pathname.startsWith('/dashboard') || 
+                          pathname.startsWith('/feed-fish') || 
+                          pathname.startsWith('/ai-assistant');
   
-  if (isOnDashboard && !hasSessionToken) {
+  if (isProtectedRoute && !hasSessionToken) {
     // Redirect to login page if not authenticated
     const url = new URL("/login", request.url);
     // Add the current path as a redirect parameter
@@ -25,5 +27,5 @@ export function middleware(request: NextRequest) {
 
 // Configure which paths this middleware will run on
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/feed-fish/:path*", "/ai-assistant/:path*"],
 }; 
