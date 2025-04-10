@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-// import Link from 'next/link';
+import Link from 'next/link';
 
 export function LoginForm() {
   const router = useRouter();
@@ -129,7 +129,7 @@ export function LoginForm() {
         </div>
       </form>
       
-      {/* Temporarily hiding sign up link
+      {/* Temporarily hiding sign up link */}
       <div className="text-center text-sm">
         <p className="text-gray-600">
           Don&apos;t have an account?{' '}
@@ -137,7 +137,7 @@ export function LoginForm() {
             Sign up
           </Link>
         </p>
-      </div> */}
+      </div>
      
       
       {/* Temporarily hiding OAuth providers until you have real credentials
