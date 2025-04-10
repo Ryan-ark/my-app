@@ -39,8 +39,12 @@ import {
   getSensorData, 
   subscribeToSensorData
 } from '@/app/lib/sensorService';
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown} from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/components/ui/use-toast";
+import { checkThresholds } from '@/app/lib/notificationService';
+import { NotificationBadge } from '@/app/components/notification-badge';
+import { ThresholdTable } from '@/app/components/threshold-table';
 
 interface FormattedSensorData {
   timestamp: string;
@@ -57,6 +61,7 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { toast } = useToast();
 
   // Helper function to get the latest reading
   const getLatestReading = (data: SensorData) => {
@@ -105,6 +110,20 @@ export default function Dashboard() {
         if (isSubscribed) {
           setSensorData(data);
           setLastUpdated(new Date());
+          
+          // Check thresholds for notifications
+          const notifications = await checkThresholds(data);
+          
+          // Show toast notifications for critical and refill alerts
+          notifications.forEach(notification => {
+            if (notification.threshold === 'critical' || notification.threshold === 'refill') {
+              toast({
+                title: `${notification.threshold.charAt(0).toUpperCase() + notification.threshold.slice(1)} Alert!`,
+                description: notification.message,
+                variant: notification.threshold === 'critical' ? 'destructive' : 'default',
+              });
+            }
+          });
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -121,6 +140,22 @@ export default function Dashboard() {
       if (isSubscribed) {
         setSensorData(data);
         setLastUpdated(new Date());
+        
+        // Check for threshold notifications on real-time updates
+        checkThresholds(data).then(notifications => {
+          // Show toast notifications for critical and refill alerts
+          notifications.forEach(notification => {
+            if (notification.threshold === 'critical' || notification.threshold === 'refill') {
+              toast({
+                title: `${notification.threshold.charAt(0).toUpperCase() + notification.threshold.slice(1)} Alert!`,
+                description: notification.message,
+                variant: notification.threshold === 'critical' ? 'destructive' : 'default',
+              });
+            }
+          });
+        }).catch(err => {
+          console.error('Error checking thresholds:', err);
+        });
       }
     });
 
@@ -128,7 +163,7 @@ export default function Dashboard() {
       isSubscribed = false;
       unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -137,6 +172,20 @@ export default function Dashboard() {
       setSensorData(data);
       setLastUpdated(new Date());
       setError(null);
+      
+      // Check thresholds on manual refresh
+      const notifications = await checkThresholds(data);
+      
+      // Show toast notifications for critical and refill alerts
+      notifications.forEach(notification => {
+        if (notification.threshold === 'critical' || notification.threshold === 'refill') {
+          toast({
+            title: `${notification.threshold.charAt(0).toUpperCase() + notification.threshold.slice(1)} Alert!`,
+            description: notification.message,
+            variant: notification.threshold === 'critical' ? 'destructive' : 'default',
+          });
+        }
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
@@ -265,6 +314,7 @@ export default function Dashboard() {
                 </span>
               )}
               <div className="flex gap-2">
+                <NotificationBadge />
                 <Button
                   variant="outline"
                   size="sm"
@@ -566,6 +616,16 @@ export default function Dashboard() {
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
+              {/* Threshold Table */}
+              <Card className="md:col-span-2 mt-4">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="text-sm sm:text-base">Tilapia Fishpond Parameters</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ThresholdTable />
                 </CardContent>
               </Card>
             </div>
