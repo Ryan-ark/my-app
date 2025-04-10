@@ -4,7 +4,10 @@ import type { NextRequest } from "next/server";
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
   // Check if user is authenticated by looking for the session token
-  const hasSessionToken = request.cookies.has("next-auth.session-token");
+  // Handle different cookie naming patterns between environments
+  const hasSessionToken = request.cookies.has("next-auth.session-token") || 
+                          request.cookies.has("__Secure-next-auth.session-token") ||
+                          request.cookies.has("__Host-next-auth.session-token");
   
   const pathname = request.nextUrl.pathname;
   const isOnDashboard = pathname.startsWith('/dashboard');
