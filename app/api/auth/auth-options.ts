@@ -4,11 +4,11 @@ import clientPromise from "@/app/lib/mongodb";
 import { compare } from "bcrypt";
 
 // Ensure we use the correct URL for different environments
-const getBaseUrl = () => {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-};
+// const getBaseUrl = () => {
+//   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+//   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+//   return "http://localhost:3000";
+// };
 
 export const authOptions: NextAuthOptions = {
   providers: [
