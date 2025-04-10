@@ -55,15 +55,25 @@ export function LoginForm() {
         return;
       }
 
-      // Add another small delay before navigation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Successful login - handle redirect
+      console.log('Login successful, redirecting to:', result.url || callbackUrl);
       
+      // Force a small delay to ensure state update before redirect
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // First try router.push with result.url
       if (result.url) {
-        router.push(result.url);
+        try {
+          router.push(result.url);
+          router.refresh();
+        } catch (err) {
+          console.error('Failed to redirect using result.url, falling back to callbackUrl', err);
+          window.location.href = callbackUrl; // Fallback to direct location change
+        }
       } else {
-        router.push(callbackUrl);
+        // If no result.url, use callbackUrl with direct location change for reliability
+        window.location.href = callbackUrl;
       }
-      router.refresh();
     } catch (err) {
       console.error('SignIn error:', err);
       setError('Something went wrong. Please try again.');
@@ -130,14 +140,14 @@ export function LoginForm() {
       </form>
       
       {/* Temporarily hiding sign up link */}
-      <div className="text-center text-sm">
+      {/* <div className="text-center text-sm">
         <p className="text-gray-600">
           Don&apos;t have an account?{' '}
           <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
             Sign up
           </Link>
         </p>
-      </div>
+      </div> */}
      
       
       {/* Temporarily hiding OAuth providers until you have real credentials
