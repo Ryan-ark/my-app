@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Sparkles
 } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -20,62 +21,65 @@ import {
 } from "@/components/ui/sidebar"
 import { useEffect, useState } from "react"
 
-// This is sample data.
-const data = {
-  user: {
-    name: "Admin",
-    email: "admin@myaqualink.com",
-    avatar: "/avatars/admin.jpg",
+// Teams data
+const teams = [
+  {
+    name: "AquaLink",
+    logo: GalleryVerticalEnd,
+    plan: "Monitoring",
+  }
+]
+
+// Navigation data
+const navItems = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard,
+    isActive: true,
+    items: [
+      {
+        title: "Sensor Overview",
+        url: "/dashboard",
+      }
+    ],
   },
-  teams: [
-    {
-      name: "AquaLink",
-      logo: GalleryVerticalEnd,
-      plan: "Monitoring",
-    }
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      isActive: true,
-      items: [
-        {
-          title: "Sensor Overview",
-          url: "/dashboard",
-        }
-      ],
-    },
-    {
-      title: "AI Assistant",
-      url: "/ai-assistant",
-      icon: Sparkles,
-      isActive: false,
-      items: [
-        {
-          title: "Aqua Intelligence",
-          url: "/ai-assistant",
-        }
-      ],
-    },
-    {
-      title: "Feed Fish",
-      url: "/feed-fish",
-      icon: Fish,
-      isActive: false,
-      items: [
-        {
-          title: "Feeding Schedule",
-          url: "/feed-fish",
-        }
-      ],
-    }
-  ]
-}
+  {
+    title: "AI Assistant",
+    url: "/ai-assistant",
+    icon: Sparkles,
+    isActive: false,
+    items: [
+      {
+        title: "Aqua Intelligence",
+        url: "/ai-assistant",
+      }
+    ],
+  },
+  {
+    title: "Feed Fish",
+    url: "/feed-fish",
+    icon: Fish,
+    isActive: false,
+    items: [
+      {
+        title: "Feeding Schedule",
+        url: "/feed-fish",
+      }
+    ],
+  }
+]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isMobile, setIsMobile] = useState(false)
+  const { data: session } = useSession()
+  
+  // Default user data for loading state
+  const userData = {
+    name: session?.user?.name || "User",
+    email: session?.user?.email || "Loading...",
+    avatar: session?.user?.image
+  }
   
   useEffect(() => {
     // Check if window is defined (for SSR)
@@ -102,13 +106,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {...props}
     >
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

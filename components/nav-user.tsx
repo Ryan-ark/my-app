@@ -7,6 +7,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react"
+import { signOut } from "next-auth/react"
 
 import {
   Avatar,
@@ -35,10 +36,14 @@ export function NavUser({
   user: {
     name: string
     email: string
-    avatar: string
+    avatar?: string
   }
 }) {
   const { isMobile } = useSidebar()
+  
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/login" })
+  }
 
   return (
     <SidebarMenu>
@@ -51,7 +56,9 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg text-black">SR</AvatarFallback>
+                <AvatarFallback className="rounded-lg text-black">
+                  {user.name?.substring(0, 2).toUpperCase() || "US"}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -70,7 +77,9 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg text-black">SR</AvatarFallback>
+                  <AvatarFallback className="rounded-lg text-black">
+                    {user.name?.substring(0, 2).toUpperCase() || "US"}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -81,21 +90,21 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck />
+                <BadgeCheck className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Settings />
+                <Settings className="mr-2 h-4 w-4" />
                 System Settings
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Bell />
+                <Bell className="mr-2 h-4 w-4" />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
