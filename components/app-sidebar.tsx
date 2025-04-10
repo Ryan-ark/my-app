@@ -8,6 +8,7 @@ import {
   Sparkles
 } from "lucide-react"
 import { useSession } from "next-auth/react"
+import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -19,7 +20,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 
 // Teams data
 const teams = [
@@ -30,13 +31,12 @@ const teams = [
   }
 ]
 
-// Navigation data
-const navItems = [
+// Base navigation data
+const baseNavItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
-    isActive: true,
     items: [
       {
         title: "Sensor Overview",
@@ -48,7 +48,6 @@ const navItems = [
     title: "AI Assistant",
     url: "/ai-assistant",
     icon: Sparkles,
-    isActive: false,
     items: [
       {
         title: "Aqua Intelligence",
@@ -60,7 +59,6 @@ const navItems = [
     title: "Feed Fish",
     url: "/feed-fish",
     icon: Fish,
-    isActive: false,
     items: [
       {
         title: "Feeding Schedule",
@@ -73,6 +71,7 @@ const navItems = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isMobile, setIsMobile] = useState(false)
   const { data: session } = useSession()
+  const pathname = usePathname()
   
   // Default user data for loading state
   const userData = {
@@ -80,6 +79,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     email: session?.user?.email || "Loading...",
     avatar: session?.user?.image
   }
+  
+  // Generate nav items with dynamic active state based on current path
+  const navItems = useMemo(() => {
+    return baseNavItems.map(item => ({
+      ...item,
+      isActive: pathname.startsWith(item.url)
+    }))
+  }, [pathname])
   
   useEffect(() => {
     // Check if window is defined (for SSR)

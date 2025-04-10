@@ -19,7 +19,7 @@ import {
 } from 'recharts';
 import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Fish } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -37,21 +37,9 @@ import {
 import { 
   SensorData, 
   getSensorData, 
-  subscribeToSensorData,
-  updateWeightData 
+  subscribeToSensorData
 } from '@/app/lib/sensorService';
 import { TrendingUp, TrendingDown } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -69,9 +57,6 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [feedDialogOpen, setFeedDialogOpen] = useState(false);
-  const [feedWeight, setFeedWeight] = useState<string>('');
-  const [isFeeding, setIsFeeding] = useState(false);
   const { toast } = useToast();
   const [isMobile, setIsMobile] = useState(false);
 
@@ -237,48 +222,6 @@ export default function Dashboard() {
   console.log('Latest reading:', latestReading);
   console.log('Chart data:', chartData);
 
-  const handleFeedFish = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!feedWeight || isNaN(parseFloat(feedWeight)) || parseFloat(feedWeight) <= 0) {
-      toast({
-        title: "Invalid weight",
-        description: "Please enter a valid weight greater than 0.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsFeeding(true);
-    
-    try {
-      const weight = parseFloat(feedWeight);
-      await updateWeightData(weight);
-      
-      toast({
-        title: "Feeding successful",
-        description: `Fed ${(weight / 1000).toFixed(3)}kg of fish food. Data has been updated.`,
-        variant: "default"
-      });
-      
-      setFeedDialogOpen(false);
-      setFeedWeight('');
-      
-      // Refresh data
-      await handleRefresh();
-      
-    } catch (err) {
-      toast({
-        title: "Error while feeding",
-        description: err instanceof Error ? err.message : "An error occurred during feeding",
-        variant: "destructive"
-      });
-      console.error('Error feeding fish:', err);
-    } finally {
-      setIsFeeding(false);
-    }
-  };
-
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768)
@@ -324,62 +267,6 @@ export default function Dashboard() {
                 </span>
               )}
               <div className="flex gap-2">
-                <Dialog open={feedDialogOpen} onOpenChange={setFeedDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size={isMobile ? "sm" : "default"} className="flex items-center gap-1 sm:gap-2 bg-green-600 hover:bg-green-700">
-                      <Fish className="h-3 w-3 sm:h-4 sm:w-4" />
-                      {!isMobile && "Feed Fish"}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Feed Fish</DialogTitle>
-                      <DialogDescription>
-                        Enter the amount of feed (in kilograms) to dispense to the fish.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleFeedFish}>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="weight" className="text-right">
-                            Weight (kg)
-                          </Label>
-                          <Input
-                            id="weight"
-                            type="number"
-                            step="0.001"
-                            min="0.001"
-                            value={feedWeight ? (parseFloat(feedWeight) / 1000).toFixed(3) : ''}
-                            onChange={(e) => {
-                              const kgValue = parseFloat(e.target.value) || 0;
-                              setFeedWeight((kgValue * 1000).toString());
-                            }}
-                            className="col-span-3"
-                            placeholder="Enter weight in kilograms"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => setFeedDialogOpen(false)}
-                          disabled={isFeeding}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          type="submit"
-                          disabled={isFeeding}
-                          className={isFeeding ? 'opacity-70' : ''}
-                        >
-                          {isFeeding ? 'Feeding...' : 'Feed Now'}
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
                 <Button
                   variant="outline"
                   size="sm"
