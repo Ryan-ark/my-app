@@ -40,7 +40,6 @@ import {
   subscribeToSensorData
 } from '@/app/lib/sensorService';
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
 interface FormattedSensorData {
@@ -57,7 +56,6 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { toast } = useToast();
   const [isMobile, setIsMobile] = useState(false);
 
   // Helper function to get the latest reading
